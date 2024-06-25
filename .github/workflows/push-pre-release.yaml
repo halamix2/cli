@@ -1,0 +1,38 @@
+name: Push Pre-Release
+
+on:
+  push:
+    branches:
+      - jobs-pre-release
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: push dev tag
+        run: |
+          git tag -f dev
+          git push -f origin dev
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: "go.mod"
+      - name: create bin directory
+        run: mkdir -p bin
+      - name: Build binary
+        run: go build -o bin/kyma-test
+        # TODO: build for all platforms
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: "go.mod"
+      - name: Install goreleaser
+        run: go install github.com/goreleaser/goreleaser/v2@latest
+      - name: Create pre-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          goreleaser release --clean --config .goreleaser-dev.yml
